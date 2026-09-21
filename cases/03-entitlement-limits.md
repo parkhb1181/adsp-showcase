@@ -20,7 +20,7 @@
 |---|---|---|
 | 프리미엄 여부 | `is_premium()` RPC | 만료 비교를 클라이언트에서 하면 기기 시계를 되돌리는 것만으로 끝난 권한이 되살아난다 |
 | 오늘 날짜 | `kst_today()` | 클라이언트 시간을 쓰면 한도를 무한히 리셋할 수 있다. UTC로 두면 한국 오전 9시에 초기화돼 사용자가 혼란스럽다 |
-| 사용량 증가 | `increment_usage()` RPC, upsert 한 문장 | `select` 후 `update`로 나누면 두 탭에서 동시에 풀 때 어긋난다. `security definer`지만 인자로 user_id를 받지 않고 `auth.uid()`를 쓴다 — 받으면 남의 카운터를 올릴 수 있다 |
+| 사용량 증가 | `increment_usage()` RPC, upsert 한 문장 | `select` 후 `update`로 나누면 두 탭에서 동시에 풀 때 어긋난다. `security definer`지만 인자로 user_id를 받지 않고 `auth.uid()`를 쓴다, 받으면 남의 카운터를 올릴 수 있다 |
 | `entitlements` · `payments` 쓰기 | 정책 없음 (service_role 전용) | RLS를 열어두면 누구나 자기에게 권한을 준다 |
 
 비로그인 사용자는 이 구조를 안 탑니다. 계정이 없으면 카운트를 귀속시킬 곳이 없어서, 종전대로 로컬에서 셉니다. 기기 시계를 신뢰할 수밖에 없는데, 그건 비로그인 한도(15문제)가 감수하는 비용입니다.
@@ -76,7 +76,7 @@ begin
 end; $$;
 ```
 
-`lib/entitlement.ts` — 실패했을 때 어느 쪽으로 넘어지는지가 중요합니다.
+`lib/entitlement.ts`, 실패했을 때 어느 쪽으로 넘어지는지가 중요합니다.
 
 ```ts
 export async function fetchIsPremium(): Promise<boolean> {
@@ -90,13 +90,13 @@ export async function fetchIsPremium(): Promise<boolean> {
 
 /**
  * 사용량 1 증가. 문항을 "푼" 시점(정답 제출)에 부른다.
- * 실패해도 학습 흐름은 끊지 않는다 — 카운트가 한 번 덜 오르는 편이,
+ * 실패해도 학습 흐름은 끊지 않는다. 카운트가 한 번 덜 오르는 편이,
  * 네트워크 오류로 문제를 못 푸는 것보다 낫다.
  */
 export async function incrementUsage(): Promise<number | null> { /* rpc('increment_usage') */ }
 ```
 
-`lib/hooks/useDailyUsage.ts` — 화면은 낙관적으로 먼저 올리고 서버 값으로 교정합니다.
+`lib/hooks/useDailyUsage.ts`, 화면은 낙관적으로 먼저 올리고 서버 값으로 교정합니다.
 
 ```ts
 const registerSolved = useCallback(() => {
@@ -110,7 +110,7 @@ const registerSolved = useCallback(() => {
 }, [isLoggedIn]);
 ```
 
-## 한도 값을 어디에 둘지 — 한 번 틀렸던 것
+## 한도 값을 어디에 둘지: 한 번 틀렸던 것
 
 처음엔 한도를 서버 `app_config`에도 두고 코드 상수와 둘 중 작은 값을 썼습니다. 재배포 없이 조절하려는 의도였습니다.
 

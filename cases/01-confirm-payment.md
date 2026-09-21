@@ -12,10 +12,10 @@
 
 함수가 막아야 하는 것 네 가지를 먼저 적고, 그걸 기준으로 코드를 짰습니다.
 
-1. **금액 위변조** — 클라이언트가 보낸 금액을 믿지 않는다. PG 응답의 금액을 `app_config`의 가격과 대조한다
-2. **명의 도용** — 결제할 때 실어 보낸 `customData.userId`가 지금 로그인한 사용자와 같은지 본다. 없으면 남의 주문번호를 알아낸 사람이 자기에게 권한을 붙일 수 있다
-3. **중복 부여** — 주문번호로 먼저 걸러내고, 그래도 겹치면 `payments.payment_key`의 UNIQUE 제약에 걸린다. 웹훅·재시도·새로고침 모두 안전하다
-4. **권한 위조** — `entitlements` 테이블에 클라이언트 쓰기 정책이 없다. 여기서만 service_role로 쓴다
+1. **금액 위변조**: 클라이언트가 보낸 금액을 믿지 않는다. PG 응답의 금액을 `app_config`의 가격과 대조한다
+2. **명의 도용**: 결제할 때 실어 보낸 `customData.userId`가 지금 로그인한 사용자와 같은지 본다. 없으면 남의 주문번호를 알아낸 사람이 자기에게 권한을 붙일 수 있다
+3. **중복 부여**: 주문번호로 먼저 걸러내고, 그래도 겹치면 `payments.payment_key`의 UNIQUE 제약에 걸린다. 웹훅·재시도·새로고침 모두 안전하다
+4. **권한 위조**: `entitlements` 테이블에 클라이언트 쓰기 정책이 없다. 여기서만 service_role로 쓴다
 
 PG를 토스에서 포트원(KG이니시스)으로 바꾸면서 하나 더 알게 됐습니다. **PG마다 이 함수가 하는 일이 다릅니다.**
 
@@ -30,21 +30,21 @@ PG를 토스에서 포트원(KG이니시스)으로 바꾸면서 하나 더 알�
 
 ```ts
 Deno.serve(async (req) => {
-  // 1. 사용자 확인 — Authorization 헤더로 auth.getUser()
-  // 2. 입력 — provider, orderId, transactionId
+  // 1. 사용자 확인: Authorization 헤더로 auth.getUser()
+  // 2. 입력: provider, orderId, transactionId
   //    provider 가 없으면 토스로 본다. 캐시된 예전 클라이언트가 남아 있을 수 있다.
   const provider = body.provider ?? 'toss';
 
-  // 3. 기대 금액 — app_config.premium_price_krw. 클라이언트 금액은 참고만
+  // 3. 기대 금액: app_config.premium_price_krw. 클라이언트 금액은 참고만
   const expected = Number(cfg.value);
 
-  // 4. 이미 처리된 결제인가 — 주문번호로 본다.
+  // 4. 이미 처리된 결제인가: 주문번호로 본다.
   //    두 PG 모두 시도마다 새로 채번하므로 PG 를 부르기 전에 확인할 수 있다.
   const { data: existing } = await admin.from('payments')
     .select('id, status').eq('order_id', orderId).maybeSingle();
   if (existing) return json({ ok: true, alreadyProcessed: true, status: existing.status });
 
-  // 5. PG 별 확정 — 결과를 Settled | SettleFailure 한 모양으로 맞춘다
+  // 5. PG 별 확정: 결과를 Settled | SettleFailure 한 모양으로 맞춘다
   const settled = provider === 'portone'
     ? await settlePortOne({ orderId, expected, userId: user.id })
     : await settleToss({ transactionId, orderId, amount: body.amount, expected });
@@ -58,11 +58,11 @@ Deno.serve(async (req) => {
     return json({ error: settled.error, code: settled.code }, settled.httpStatus);
   }
 
-  // 6. 원장 기록 — UNIQUE 위반(23505)이면 그 사이 다른 요청이 먼저 기록한 것.
+  // 6. 원장 기록: UNIQUE 위반(23505)이면 그 사이 다른 요청이 먼저 기록한 것.
   //    결제는 확정됐고 권한도 곧 부여되므로 성공으로 처리한다.
   if (payErr?.code === '23505') return json({ ok: true, alreadyProcessed: true });
 
-  // 7. 권한 부여 — 재구매는 이어 붙인다. 남은 기간이 있는데 다시 결제한 사람의
+  // 7. 권한 부여: 재구매는 이어 붙인다. 남은 기간이 있는데 다시 결제한 사람의
   //    잔여일을 없애면 돈을 내고 손해를 보는 셈이 된다.
   const base = prevExpiry > now ? prevExpiry : now;
   const expiresAt = new Date(base + PREMIUM_DURATION_DAYS * 24 * 60 * 60 * 1000);

@@ -77,7 +77,7 @@ export function isUserProgress(value: unknown): value is UserProgress {
 - 로그인하면 로컬 진도와 서버 진도를 병합해 양쪽에 다시 씁니다. 어느 기기에서 열어도 같은 진도가 보입니다
 - 같은 진도를 반복 병합해도 `attemptCount`와 `solvedCount`가 변하지 않습니다
 
-## 한계 — 알고 있는 것
+## 한계: 알고 있는 것
 
 **합집합이라 "해제"가 다른 기기로 전파되지 않습니다.** A 기기에서 북마크를 풀어도 B 기기가 다음 동기화에서 되살립니다. 북마크와 버린 문제 둘 다 그렇습니다.
 

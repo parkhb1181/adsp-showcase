@@ -7,7 +7,7 @@
 화면에는 `owner_mismatch`, 원장(`payments`)에는 `FAILED`가 남았습니다. 그런데 원장에 같이 저장해둔 PG 응답 원본(`raw`)을 열어보니 이상했습니다.
 
 - `status`: `PAID`
-- `amount.total`: `2900` — 맞음
+- `amount.total`: `2900`, 맞음
 - `customData` 안의 `userId`: 로그인한 사용자와 같은 값
 
 전부 맞는데 판정만 틀렸습니다.
@@ -20,14 +20,14 @@
 
 두 가지 선택지가 있었습니다.
 
-1. `JSON.parse`를 두 번 한다 — 지금은 맞지만 포트원이 나중에 한 겹만 주도록 바꾸면 반대로 깨진다
-2. **객체가 될 때까지 푼다** — 몇 겹이 오든 동작한다. 상한을 둬서 무한 루프는 막는다
+1. `JSON.parse`를 두 번 한다. 지금은 맞지만 포트원이 나중에 한 겹만 주도록 바꾸면 반대로 깨진다
+2. **객체가 될 때까지 푼다**: 몇 겹이 오든 동작한다. 상한을 둬서 무한 루프는 막는다
 
 2번으로 갔습니다. 외부 API의 응답 형식은 우리가 통제할 수 없으니, 형식이 바뀌어도 깨지지 않는 쪽이 맞다고 봤습니다.
 
 ## 코드
 
-`supabase/functions/confirm-payment/index.ts` — `settlePortOne` 안
+`supabase/functions/confirm-payment/index.ts`, `settlePortOne` 안
 
 ```ts
 // before
